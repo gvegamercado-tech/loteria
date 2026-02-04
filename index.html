@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lotería 3 Cifras</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>🎰 Lotería 3 Cifras</h1>
+  <p>Juega 3 cifras por solo <b>$500</b> y gana <b>$200.000</b></p>
+
+  <input type="text" id="nombre" placeholder="Tu nombre">
+  <input type="number" id="numero" placeholder="Número (000 - 999)">
+  
+  <button onclick="jugar()">Jugar</button>
+
+  <script>
+    async function jugar(){
+      const nombre = document.getElementById('nombre').value;
+      const numero = document.getElementById('numero').value;
+
+      if(!nombre || numero === ''){
+        alert('Completa los datos');
+        return;
+      }
+
+      await fetch('/jugar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, numero })
+      });
+
+      const mensaje = `Hola, jugué el número ${numero} en la Lotería 3 Cifras 🎰\nNombre: ${nombre}\nValor: $500`;
+      const url = `https://wa.me/57TU_NUMERO?text=${encodeURIComponent(mensaje)}`;
+
+      window.open(url);
+    }
+  </script>
+
+</body>
+</html>
