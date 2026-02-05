@@ -2,41 +2,63 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Lotería 3 Cifras</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Gran Sorteo</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
 
-  <h1>🎰 Lotería 3 Cifras</h1>
-  <p>Juega 3 cifras por solo <b>$500</b> y gana <b>$200.000</b></p>
+<div class="card">
+  <h2>🎉 GRAN SORTEO 🎉</h2>
 
-  <input type="text" id="nombre" placeholder="Tu nombre">
-  <input type="number" id="numero" placeholder="Número (000 - 999)">
-  
-  <button onclick="jugar()">Jugar</button>
+  <input id="numero" placeholder="Número (3 cifras)" maxlength="3">
 
-  <script>
-    async function jugar(){
-      const nombre = document.getElementById('nombre').value;
-      const numero = document.getElementById('numero').value;
+  <p>Valor: $1.000</p>
+  <p>Premio: $200.000</p>
 
-      if(!nombre || numero === ''){
-        alert('Completa los datos');
-        return;
-      }
+  <button onclick="guardar()">GUARDAR JUGADA</button>
 
-      await fetch('/jugar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, numero })
-      });
+  <hr>
+  <p><b>Responsable:</b> Gustavo Vega</p>
+  <p>📞 322 631 4209</p>
+</div>
 
-      const mensaje = `Hola, jugué el número ${numero} en la Lotería 3 Cifras 🎰\nNombre: ${nombre}\nValor: $500`;
-      const url = `https://wa.me/57TU_NUMERO?text=${encodeURIComponent(mensaje)}`;
+<script>
+function guardar() {
+  const numero = document.getElementById('numero').value;
 
-      window.open(url);
-    }
-  </script>
+  fetch('/jugar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nombre: 'Gustavo Vega',
+      numero: numero
+    })
+  })
+  .then(() => alert('Número guardado ✅'))
+  .catch(() => alert('Error ❌'));
+}
+</script>
 
 </body>
 </html>
