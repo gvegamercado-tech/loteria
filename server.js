@@ -1,14 +1,13 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 
 const app = express();
 
-// 🔑 MIDDLEWARES NECESARIOS
+// 🔑 MIDDLEWARES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔗 CONEXIÓN MONGODB
+// 🔗 CONEXIÓN MONGODB (Railway usa variables de entorno)
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log('MongoDB conectado 🔥'))
   .catch(err => console.error('Error MongoDB:', err));
@@ -21,7 +20,7 @@ const Jugada = mongoose.model('Jugada', {
   valor: { type: Number, default: 1000 }
 });
 
-// 🏠 RUTA PRINCIPAL (UNA SOLA)
+// 🏠 RUTA PRINCIPAL
 app.get('/', (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -84,11 +83,16 @@ app.post('/jugar', async (req, res) => {
   try {
     const { nombre, numero } = req.body;
 
+    if (!numero || numero.length !== 3) {
+      return res.status(400).send('Número inválido');
+    }
+
     const jugada = new Jugada({ nombre, numero });
     await jugada.save();
 
     res.send('<h2>✅ Número guardado con éxito</h2><a href="/">Volver</a>');
   } catch (error) {
+    console.error(error);
     res.status(500).send('❌ Error al guardar');
   }
 });
