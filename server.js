@@ -3,102 +3,128 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// 🔑 MIDDLEWARES
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
 
-// 🔗 CONEXIÓN MONGODB (Railway usa variables de entorno)
+// 🔗 MongoDB
 mongoose.connect(process.env.MONGO_URL)
-  .then(() => console.log('MongoDB conectado 🔥'))
-  .catch(err => console.error('Error MongoDB:', err));
+  .then(() => console.log('MongoDB conectado ✅'))
+  .catch(err => console.error(err));
 
-// 📦 MODELO
+// 📦 Modelo
 const Jugada = mongoose.model('Jugada', {
   nombre: String,
-  numero: String,
-  fecha: { type: Date, default: Date.now },
-  valor: { type: Number, default: 1000 }
+  contacto: String,
+  numero: { type: String, unique: true },
+  fecha: { type: Date, default: Date.now }
 });
 
-// 🏠 RUTA PRINCIPAL
-app.get('/', (req, res) => {
+// 🏠 Página principal
+app.get('/', async (req, res) => {
+  const jugadas = await Jugada.find().sort({ numero: 1 });
+
+  let filas = jugadas.map(j => `
+    <tr>
+      <td>${j.numero}</td>
+      <td>${j.nombre}</td>
+      <td>${j.contacto}</td>
+      <td>
+        <form action="/editar/${j._id}" method="POST" style="display:inline">
+          <input name="numero" placeholder="Nuevo #" required style="width:70px">
+          <button>✏️</button>
+        </form>
+        <form action="/eliminar/${j._id}" method="POST" style="display:inline">
+          <button onclick="return confirm('¿Eliminar número?')">🗑️</button>
+        </form>
+      </td>
+    </tr>
+  `).join('');
+
   res.send(`
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Lotería Tavo</title>
-<style>
-body {
-  font-family: Arial;
-  background: #0f172a;
-  color: white;
-  text-align: center;
-  padding: 40px;
-}
-.box {
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 10px;
-  max-width: 400px;
-  margin: auto;
-}
-input, button {
-  padding: 10px;
-  margin: 8px;
-  width: 90%;
-  font-size: 16px;
-}
-button {
-  background: #22c55e;
-  border: none;
-  cursor: pointer;
-}
-</style>
+<title>Gran Sorteo</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="box">
-<h1>🎰 GRAN SORTEO</h1>
-<p>Lotería 3 cifras</p>
-<p>Valor: <b>$1.000</b></p>
-<p>Premio: <b>$200.000</b></p>
+
+<h1>🎉 GRAN SORTEO 🎉</h1>
+<p>Valor: $1.000 | Premio: $200.000</p>
 
 <form method="POST" action="/jugar">
-<input name="nombre" placeholder="Nombre del cliente" required />
-<input name="numero" placeholder="Número (000 - 999)" required />
-<button type="submit">Guardar número</button>
+  <input name="nombre" placeholder="Nombre" required>
+  <input name="contacto" placeholder="Contacto" required>
+  <input name="numero" placeholder="Número (000-999)" required>
+  <button type="submit">Guardar número</button>
 </form>
 
-<hr />
-<p>Responsable: Gustavo Vega</p>
-<p>📞 3226314209</p>
-</div>
+<h2>Números registrados</h2>
+
+<table>
+<tr>
+  <th>Número</th>
+  <th>Nombre</th>
+  <th>Contacto</th>
+  <th>Acciones</th>
+</tr>
+${filas || '<tr><td colspan="4">Sin registros</td></tr>'}
+</table>
+
+<p><b>Responsable:</b> Gustavo Vega</p>
+<p>📞 322 631 4209</p>
+
 </body>
 </html>
 `);
 });
 
-// 🎟️ GUARDAR JUGADA
+// ➕ Guardar
 app.post('/jugar', async (req, res) => {
   try {
-    const { nombre, numero } = req.body;
+    const { nombre, contacto, numero } = req.body;
 
-    if (!numero || numero.length !== 3) {
-      return res.status(400).send('Número inválido');
+    if (!/^\d{3}$/.test(numero)) {
+      return res.send('Número inválido <br><a href="/">Volver</a>');
     }
 
-    const jugada = new Jugada({ nombre, numero });
-    await jugada.save();
+    const existe = await Jugada.findOne({ numero });
+    if (existe) {
+      return res.send('Número repetido <br><a href="/">Volver</a>');
+    }
 
-    res.send('<h2>✅ Número guardado con éxito</h2><a href="/">Volver</a>');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('❌ Error al guardar');
+    await Jugada.create({ nombre, contacto, numero });
+    res.redirect('/');
+  } catch {
+    res.send('Error al guardar <br><a href="/">Volver</a>');
   }
 });
 
-// 🚀 SERVIDOR
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log('Servidor activo en puerto ' + PORT);
+// ✏️ Editar número
+app.post('/editar/:id', async (req, res) => {
+  const { numero } = req.body;
+
+  if (!/^\d{3}$/.test(numero)) {
+    return res.send('Número inválido <br><a href="/">Volver</a>');
+  }
+
+  const existe = await Jugada.findOne({ numero });
+  if (existe) {
+    return res.send('Número ya existe <br><a href="/">Volver</a>');
+  }
+
+  await Jugada.findByIdAndUpdate(req.params.id, { numero });
+  res.redirect('/');
 });
+
+// 🗑️ Eliminar
+app.post('/eliminar/:id', async (req, res) => {
+  await Jugada.findByIdAndDelete(req.params.id);
+  res.redirect('/');
+});
+
+// 🚀 Servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Servidor activo en ' + PORT));
