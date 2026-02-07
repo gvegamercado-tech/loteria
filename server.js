@@ -10,17 +10,17 @@ app.use(express.static('public'));
 // 🔗 MongoDB
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log('MongoDB conectado ✅'))
-  .catch(err => console.error(err));
+  .catch(err => console.error('Error MongoDB:', err));
 
-// 📦 Modelo
+// 📦 MODELO (SIN unique)
 const Jugada = mongoose.model('Jugada', {
   nombre: String,
   contacto: String,
-  numero: { type: String, unique: true },
+  numero: String,
   fecha: { type: Date, default: Date.now }
 });
 
-// 🏠 Página principal
+// 🏠 PÁGINA PRINCIPAL
 app.get('/', async (req, res) => {
   const jugadas = await Jugada.find().sort({ numero: 1 });
 
@@ -52,7 +52,7 @@ app.get('/', async (req, res) => {
 <body>
 
 <h1>🎉 GRAN SORTEO 🎉</h1>
-<p>Valor: $1.000 | Premio: $200.000</p>
+<p>Valor: <b>$1.000</b> | Premio: <b>$200.000</b></p>
 
 <form method="POST" action="/jugar">
   <input name="nombre" placeholder="Nombre" required>
@@ -81,7 +81,7 @@ ${filas || '<tr><td colspan="4">Sin registros</td></tr>'}
 `);
 });
 
-// ➕ Guardar
+// ➕ GUARDAR
 app.post('/jugar', async (req, res) => {
   try {
     const { nombre, contacto, numero } = req.body;
@@ -97,12 +97,13 @@ app.post('/jugar', async (req, res) => {
 
     await Jugada.create({ nombre, contacto, numero });
     res.redirect('/');
-  } catch {
+  } catch (error) {
+    console.error(error);
     res.send('Error al guardar <br><a href="/">Volver</a>');
   }
 });
 
-// ✏️ Editar número
+// ✏️ EDITAR
 app.post('/editar/:id', async (req, res) => {
   const { numero } = req.body;
 
@@ -119,12 +120,14 @@ app.post('/editar/:id', async (req, res) => {
   res.redirect('/');
 });
 
-// 🗑️ Eliminar
+// 🗑️ ELIMINAR
 app.post('/eliminar/:id', async (req, res) => {
   await Jugada.findByIdAndDelete(req.params.id);
   res.redirect('/');
 });
 
-// 🚀 Servidor
+// 🚀 SERVIDOR
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('Servidor activo en ' + PORT));
+app.listen(PORT, () => {
+  console.log('Servidor activo en puerto ' + PORT);
+});
